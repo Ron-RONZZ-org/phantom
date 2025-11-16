@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt'
 import speakeasy from 'speakeasy'
-import { H3Event, getRequestHeader, setResponseHeader } from 'h3'
+import { H3Event } from 'h3'
 
 const SALT_ROUNDS = 10
 const SESSION_COOKIE_NAME = 'phantom_session'
@@ -68,7 +68,8 @@ function parseCookie(cookieHeader: string | null | undefined, name: string): str
 }
 
 function getCookieValue(event: H3Event, name: string): string | null {
-  const cookieHeader = getRequestHeader(event, 'cookie')
+  // Access headers directly from Node.js request object to avoid h3 API issues
+  const cookieHeader = event.node.req.headers['cookie'] as string | undefined
   return parseCookie(cookieHeader, name)
 }
 
@@ -87,11 +88,13 @@ function setCookieValue(event: H3Event, name: string, value: string, options: {
   if (options.maxAge) parts.push(`Max-Age=${options.maxAge}`)
   if (options.path) parts.push(`Path=${options.path}`)
   
-  setResponseHeader(event, 'Set-Cookie', parts.join('; '))
+  // Set header directly on Node.js response object
+  event.node.res.setHeader('Set-Cookie', parts.join('; '))
 }
 
 function deleteCookieValue(event: H3Event, name: string) {
-  setResponseHeader(event, 'Set-Cookie', `${name}=; Max-Age=0; Path=/`)
+  // Set header directly on Node.js response object
+  event.node.res.setHeader('Set-Cookie', `${name}=; Max-Age=0; Path=/`)
 }
 
 export async function hashPassword(password: string): Promise<string> {

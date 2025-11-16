@@ -1,13 +1,26 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcrypt'
+import crypto from 'crypto'
 
 const prisma = new PrismaClient()
+
+function generateRandomPassword(length: number = 16): string {
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
+  const randomBytes = crypto.randomBytes(length)
+  let password = ''
+  
+  for (let i = 0; i < length; i++) {
+    password += charset[randomBytes[i] % charset.length]
+  }
+  
+  return password
+}
 
 async function main() {
   console.log('Seeding database...')
 
-  // Create admin user
-  const adminPassword = 'admin123' // Change this!
+  // Generate random password for admin user
+  const adminPassword = generateRandomPassword(16)
   const adminPasswordHash = await bcrypt.hash(adminPassword, 10)
 
   const admin = await prisma.user.upsert({
@@ -20,9 +33,15 @@ async function main() {
     }
   })
 
-  console.log('Created admin user:', admin.username)
+  console.log('\n' + '='.repeat(60))
+  console.log('✅ Admin user created!')
+  console.log('='.repeat(60))
+  console.log('Username: admin')
   console.log('Password:', adminPassword)
-  console.log('⚠️  Please change the password after first login!')
+  console.log('='.repeat(60))
+  console.log('⚠️  IMPORTANT: Save this password securely!')
+  console.log('⚠️  This password will not be shown again.')
+  console.log('='.repeat(60) + '\n')
 
   // Create some sample tags
   const tags = await Promise.all([
@@ -94,7 +113,7 @@ Enjoy writing!`,
   console.log('\nYou can now:')
   console.log('1. Start the dev server: npm run dev')
   console.log('2. Visit http://localhost:3000')
-  console.log('3. Log in to /editor with username: admin, password: admin123')
+  console.log('3. Log in to /editor with username: admin and the password shown above')
 }
 
 main()

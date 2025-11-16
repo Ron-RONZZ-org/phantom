@@ -132,7 +132,7 @@ The backend uses Prisma ORM with PostgreSQL for data persistence.
 5. **Access the application:**
    - Home: http://localhost:3000
    - Editor: http://localhost:3000/editor
-   - Login with: username `admin`, password `admin123`
+   - Login with: username `admin` and the randomly generated password from the seed script output
 
 ### Production Deployment
 

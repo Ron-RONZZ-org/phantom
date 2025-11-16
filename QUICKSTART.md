@@ -49,9 +49,11 @@ npm run db:seed
 ```
 
 This creates:
-- Admin user: `admin` / `admin123`
+- Admin user with username `admin` and a randomly generated password (displayed in terminal)
 - Sample article "Welcome to Phantom"
 - Sample tags: tutorial, web, javascript
+
+**Important:** The randomly generated password will be displayed in the terminal. Save it securely as it won't be shown again!
 
 ### 4. Start Development Server
 
@@ -72,7 +74,7 @@ Visit the home page to see the "Welcome to Phantom" article.
 1. Navigate to http://localhost:3000/editor
 2. Login with:
    - Username: `admin`
-   - Password: `admin123`
+   - Password: The randomly generated password from the seed script output
 
 ⚠️ **Important**: Change the default password after first login!
 

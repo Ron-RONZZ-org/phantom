@@ -1,5 +1,5 @@
-import prisma from '~/server/utils/prisma'
-import { verifyPassword, setUserSession, verifyTOTPToken } from '~/server/utils/auth'
+import prisma from '../../utils/prisma'
+import { verifyPassword, setUserSession, verifyTOTPToken } from '../../utils/auth'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)

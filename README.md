@@ -133,7 +133,15 @@ Check out the [Nuxt deployment documentation](https://nuxt.com/docs/getting-star
 - **Database**: PostgreSQL with Prisma ORM
 - **Markdown**: marked.js for rendering
 - **Authentication**: bcrypt + speakeasy (TOTP)
-- **Session Management**: h3 sessions
+- **Session Management**: Cookie-based sessions with Node.js native APIs
+
+## Documentation
+
+- **[QUICKSTART.md](./QUICKSTART.md)** - Quick setup guide with step-by-step instructions
+- **[IMPLEMENTATION.md](./IMPLEMENTATION.md)** - Detailed architecture and implementation details
+- **[TROUBLESHOOTING_H3.md](./TROUBLESHOOTING_H3.md)** - ⚠️ **Important:** h3 v2 compatibility guide for Nuxt 4
+
+> **Note**: If you're building authentication or API endpoints with Nuxt 4, read [TROUBLESHOOTING_H3.md](./TROUBLESHOOTING_H3.md) to avoid common h3 v2 compatibility issues.
 
 ## License
 

@@ -1,5 +1,7 @@
 # Phantom - Implementation Guide
 
+> ⚠️ **Important**: This project uses Node.js native APIs to bypass h3 v2 compatibility issues in Nuxt 4. See [TROUBLESHOOTING_H3.md](./TROUBLESHOOTING_H3.md) for details on why we avoid h3 helper functions.
+
 ## Overview
 
 Phantom is a minimalist FOSS blogging platform built with Nuxt.js and Prisma, designed for markdown lovers. This document explains the implementation details and how to use the platform.
@@ -40,11 +42,17 @@ The backend uses Prisma ORM with PostgreSQL for data persistence.
 - QR codes are generated for easy setup with authenticator apps
 - TOTP tokens are verified using speakeasy with a 2-window tolerance
 
-**Implementation:**
-- `app/server/utils/auth.ts` - Authentication utilities
-- `app/server/api/auth/login.post.ts` - Login endpoint
-- `app/server/api/auth/totp/setup.post.ts` - TOTP setup
-- `app/server/api/auth/totp/enable.post.ts` - TOTP verification
+**Implementation Notes:**
+- **Does NOT use h3 helper functions** - See [TROUBLESHOOTING_H3.md](./TROUBLESHOOTING_H3.md)
+- Uses Node.js native APIs for headers, cookies, and request bodies
+- Cookie handling: Direct access via `event.node.req.headers['cookie']`
+- Response headers: Direct setting via `event.node.res.setHeader()`
+
+**Files:**
+- `server/utils/auth.ts` - Authentication utilities with direct Node.js API access
+- `server/api/auth/login.post.ts` - Login endpoint
+- `server/api/auth/totp/setup.post.ts` - TOTP setup
+- `server/api/auth/totp/enable.post.ts` - TOTP verification
 
 ### 2. Article Editor
 

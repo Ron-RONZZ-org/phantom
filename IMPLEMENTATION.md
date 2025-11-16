@@ -32,7 +32,8 @@ The backend uses Prisma ORM with PostgreSQL for data persistence.
 
 **Password-based authentication:**
 - Passwords are hashed using bcrypt with 10 salt rounds
-- Sessions are managed using h3 session utilities
+- Sessions are managed using secure HTTP-only cookies
+- In-memory session storage (for production, use Redis or database)
 
 **Optional TOTP (Two-Factor Authentication):**
 - Users can enable TOTP for additional security
@@ -144,7 +145,13 @@ The backend uses Prisma ORM with PostgreSQL for data persistence.
 2. **Set production environment variables:**
    - `DATABASE_URL`: PostgreSQL connection string
    - `JWT_SECRET`: Strong random secret
-   - `SESSION_SECRET`: Strong random secret
+   - `SESSION_SECRET`: Strong random secret (currently not used, reserved for future)
+   - `NODE_ENV`: Set to `production`
+
+3. **Important for Production:**
+   - The current implementation uses in-memory session storage
+   - For production with multiple servers, implement Redis or database-backed sessions
+   - Modify `server/utils/auth.ts` to use a persistent session store
 
 3. **Run migrations:**
    ```bash

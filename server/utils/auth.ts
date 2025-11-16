@@ -24,6 +24,35 @@ function cleanExpiredSessions() {
   }
 }
 
+// Manual body reading to avoid h3 v2 compatibility issues
+export async function readRequestBody(event: H3Event): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+    
+    event.node.req.on('data', (chunk: Buffer) => {
+      chunks.push(chunk)
+    })
+    
+    event.node.req.on('end', () => {
+      try {
+        const body = Buffer.concat(chunks).toString('utf-8')
+        if (!body) {
+          resolve({})
+          return
+        }
+        const parsed = JSON.parse(body)
+        resolve(parsed)
+      } catch (error) {
+        reject(error)
+      }
+    })
+    
+    event.node.req.on('error', (error: Error) => {
+      reject(error)
+    })
+  })
+}
+
 // Manual cookie parsing to avoid h3 v2 compatibility issues
 function parseCookie(cookieHeader: string | null | undefined, name: string): string | null {
   if (!cookieHeader) return null

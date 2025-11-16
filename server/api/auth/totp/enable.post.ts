@@ -1,5 +1,5 @@
 import prisma from '../../../utils/prisma'
-import { getUserFromSession, verifyTOTPToken } from '../../../utils/auth'
+import { getUserFromSession, verifyTOTPToken, readRequestBody } from '../../../utils/auth'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromSession(event)
@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const body = await readBody(event)
+  const body = await readRequestBody(event)
   const { token } = body
 
   if (!token) {

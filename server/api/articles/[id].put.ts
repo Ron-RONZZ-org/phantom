@@ -1,5 +1,5 @@
 import prisma from '../../utils/prisma'
-import { getUserFromSession } from '../../utils/auth'
+import { getUserFromSession, readRequestBody } from '../../utils/auth'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromSession(event)
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const body = await readBody(event)
+  const body = await readRequestBody(event)
   const { title, content, tags, customUrl, published } = body
 
   // Check ownership

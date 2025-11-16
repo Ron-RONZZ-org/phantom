@@ -1,8 +1,8 @@
 import prisma from '../../utils/prisma'
-import { verifyPassword, setUserSession, verifyTOTPToken } from '../../utils/auth'
+import { verifyPassword, setUserSession, verifyTOTPToken, readRequestBody } from '../../utils/auth'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
+  const body = await readRequestBody(event)
   const { username, password, totpToken } = body
 
   if (!username || !password) {

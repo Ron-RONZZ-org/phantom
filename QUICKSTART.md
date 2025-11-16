@@ -24,10 +24,12 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Edit `.env` and update the database URL:
+Edit `.env` and update the database URL with your PostgreSQL credentials:
 ```env
 DATABASE_URL="postgresql://username:password@localhost:5432/phantom?schema=public"
 ```
+
+**Important:** Replace `username`, `password`, and database connection details with your actual PostgreSQL credentials.
 
 ### 3. Initialize Database
 
@@ -35,6 +37,11 @@ Run migrations to create tables:
 ```bash
 npx prisma migrate dev --name init
 ```
+
+If you get an error about missing DATABASE_URL, make sure:
+1. The `.env` file exists in the root directory (same level as `package.json`)
+2. The `DATABASE_URL` is properly set in the `.env` file
+3. PostgreSQL is running and accessible
 
 Seed the database with a default admin user and sample content:
 ```bash
@@ -85,6 +92,64 @@ Visit the home page to see the "Welcome to Phantom" article.
 3. Scan the QR code with Google Authenticator or similar app
 4. Enter the 6-digit code
 5. Click "Enable TOTP"
+
+## Troubleshooting
+
+### "Missing required environment variable: DATABASE_URL"
+
+This error means Prisma cannot find your `.env` file or the DATABASE_URL variable. To fix:
+
+1. **Verify the .env file exists:**
+   ```bash
+   ls -la .env
+   ```
+   If it doesn't exist, create it from the example:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Check the .env file content:**
+   ```bash
+   cat .env
+   ```
+   Make sure it contains:
+   ```env
+   DATABASE_URL="postgresql://username:password@localhost:5432/phantom?schema=public"
+   JWT_SECRET="your-secret-key-change-in-production"
+   SESSION_SECRET="your-session-secret-change-in-production"
+   ```
+
+3. **Update with your actual database credentials:**
+   - Replace `username` with your PostgreSQL username
+   - Replace `password` with your PostgreSQL password
+   - Adjust `localhost:5432` if your PostgreSQL runs on a different host/port
+   - Change `phantom` to your actual database name if different
+
+4. **Ensure PostgreSQL is running:**
+   ```bash
+   # Check if PostgreSQL is running
+   sudo systemctl status postgresql
+   # Or on some systems:
+   pg_isready
+   ```
+
+5. **Create the database if it doesn't exist:**
+   ```bash
+   psql -U postgres -c "CREATE DATABASE phantom;"
+   ```
+
+6. **Try the migration again:**
+   ```bash
+   npx prisma migrate dev --name init
+   ```
+
+### Database Connection Errors
+
+If you get connection errors:
+- Verify PostgreSQL is running
+- Check your credentials are correct
+- Ensure the database exists
+- Check firewall settings if using remote database
 
 ## What's Next?
 

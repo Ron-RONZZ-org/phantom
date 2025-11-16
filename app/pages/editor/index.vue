@@ -155,6 +155,7 @@ const loginForm = ref({
 })
 
 const articleForm = ref({
+  id: '',
   title: '',
   content: '',
   customUrl: '',
@@ -247,6 +248,7 @@ const handleSubmit = async () => {
 
 const resetForm = () => {
   articleForm.value = {
+    id: '',
     title: '',
     content: '',
     customUrl: '',

@@ -75,9 +75,15 @@ const fetchArticles = async () => {
   }
 }
 
-const handleSearch = useDebounceFn(() => {
-  fetchArticles()
-}, 300)
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
+const handleSearch = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  searchTimeout = setTimeout(() => {
+    fetchArticles()
+  }, 300)
+}
 
 const filterByTag = (tagName: string) => {
   tagFilter.value = tagName

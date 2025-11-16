@@ -67,9 +67,15 @@ const fetchArticles = async () => {
   }
 }
 
-const handleSearch = useDebounceFn(() => {
-  fetchArticles()
-}, 300)
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
+const handleSearch = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  searchTimeout = setTimeout(() => {
+    fetchArticles()
+  }, 300)
+}
 
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('en-US', {

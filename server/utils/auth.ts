@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt'
 import speakeasy from 'speakeasy'
-import { H3Event, getCookie, setCookie, deleteCookie } from 'h3'
+import { H3Event, getRequestHeader, setResponseHeader } from 'h3'
 
 const SALT_ROUNDS = 10
 const SESSION_COOKIE_NAME = 'phantom_session'
@@ -22,6 +22,47 @@ function cleanExpiredSessions() {
       sessions.delete(sessionId)
     }
   }
+}
+
+// Manual cookie parsing to avoid h3 v2 compatibility issues
+function parseCookie(cookieHeader: string | null | undefined, name: string): string | null {
+  if (!cookieHeader) return null
+  
+  const cookies = cookieHeader.split(';').map(c => c.trim())
+  for (const cookie of cookies) {
+    const [key, value] = cookie.split('=')
+    if (key === name) {
+      return decodeURIComponent(value)
+    }
+  }
+  return null
+}
+
+function getCookieValue(event: H3Event, name: string): string | null {
+  const cookieHeader = getRequestHeader(event, 'cookie')
+  return parseCookie(cookieHeader, name)
+}
+
+function setCookieValue(event: H3Event, name: string, value: string, options: {
+  httpOnly?: boolean
+  secure?: boolean
+  sameSite?: 'lax' | 'strict' | 'none'
+  maxAge?: number
+  path?: string
+}) {
+  const parts = [`${name}=${encodeURIComponent(value)}`]
+  
+  if (options.httpOnly) parts.push('HttpOnly')
+  if (options.secure) parts.push('Secure')
+  if (options.sameSite) parts.push(`SameSite=${options.sameSite}`)
+  if (options.maxAge) parts.push(`Max-Age=${options.maxAge}`)
+  if (options.path) parts.push(`Path=${options.path}`)
+  
+  setResponseHeader(event, 'Set-Cookie', parts.join('; '))
+}
+
+function deleteCookieValue(event: H3Event, name: string) {
+  setResponseHeader(event, 'Set-Cookie', `${name}=; Max-Age=0; Path=/`)
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -51,7 +92,7 @@ export function verifyTOTPToken(token: string, secret: string): boolean {
 export async function getUserFromSession(event: H3Event) {
   cleanExpiredSessions()
   
-  const sessionId = getCookie(event, SESSION_COOKIE_NAME)
+  const sessionId = getCookieValue(event, SESSION_COOKIE_NAME)
   if (!sessionId) {
     return null
   }
@@ -61,7 +102,7 @@ export async function getUserFromSession(event: H3Event) {
     if (session) {
       sessions.delete(sessionId)
     }
-    deleteCookie(event, SESSION_COOKIE_NAME)
+    deleteCookieValue(event, SESSION_COOKIE_NAME)
     return null
   }
 
@@ -74,7 +115,7 @@ export async function setUserSession(event: H3Event, userId: string) {
   
   sessions.set(sessionId, { userId, expiresAt })
   
-  setCookie(event, SESSION_COOKIE_NAME, sessionId, {
+  setCookieValue(event, SESSION_COOKIE_NAME, sessionId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -84,9 +125,9 @@ export async function setUserSession(event: H3Event, userId: string) {
 }
 
 export async function clearUserSession(event: H3Event) {
-  const sessionId = getCookie(event, SESSION_COOKIE_NAME)
+  const sessionId = getCookieValue(event, SESSION_COOKIE_NAME)
   if (sessionId) {
     sessions.delete(sessionId)
   }
-  deleteCookie(event, SESSION_COOKIE_NAME)
+  deleteCookieValue(event, SESSION_COOKIE_NAME)
 }

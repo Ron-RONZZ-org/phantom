@@ -250,8 +250,6 @@ Required in `.env`:
 ## Future Enhancements
 
 Consider these patterns when implementing new features:
-- Redis-backed sessions for production scalability
-- Image upload support (consider S3/cloud storage)
 - RSS feed generation
 - Comment system
 - Dark mode theme

@@ -46,10 +46,10 @@
     </div>
 
     <div v-else class="editor-section" :class="{ 'fullscreen': isFullscreen }">
-      <h1>{{ editMode ? 'Edit Article' : 'Create New Article' }}</h1>
+      <h1 v-if="!isFullscreen">{{ editMode ? 'Edit Article' : 'Create New Article' }}</h1>
       
       <form @submit.prevent="handleSubmit" class="article-form">
-        <div class="form-group">
+        <div v-if="!isFullscreen" class="form-group">
           <label for="title">Title</label>
           <input 
             id="title"
@@ -60,7 +60,7 @@
           />
         </div>
 
-        <div class="form-group">
+        <div v-if="!isFullscreen" class="form-group">
           <label for="series">Series (optional)</label>
           <div class="series-container">
             <select 
@@ -79,7 +79,7 @@
           </div>
         </div>
 
-        <div class="form-group">
+        <div v-if="!isFullscreen" class="form-group">
           <label for="customUrl">Custom URL (optional)</label>
           <input 
             id="customUrl"
@@ -93,7 +93,7 @@
           </small>
         </div>
 
-        <div class="form-group">
+        <div v-if="!isFullscreen" class="form-group">
           <label for="tags">Tags (comma-separated)</label>
           <div class="tags-input-container">
             <input 
@@ -141,7 +141,7 @@
           </div>
         </div>
 
-        <div class="form-group">
+        <div v-if="!isFullscreen" class="form-group">
           <label class="checkbox-label">
             <input 
               v-model="articleForm.published" 
@@ -151,7 +151,7 @@
           </label>
         </div>
 
-        <div class="form-actions">
+        <div v-if="!isFullscreen" class="form-actions">
           <button type="submit" class="btn btn-primary">
             {{ editMode ? 'Update Article' : 'Create Article' }}
           </button>
@@ -160,8 +160,8 @@
           </button>
         </div>
         
-        <p v-if="message" class="success-message">{{ message }}</p>
-        <p v-if="error" class="error-message">{{ error }}</p>
+        <p v-if="message && !isFullscreen" class="success-message">{{ message }}</p>
+        <p v-if="error && !isFullscreen" class="error-message">{{ error }}</p>
       </form>
 
       <!-- Series Creation Modal -->
@@ -324,6 +324,11 @@ const toggleFullscreen = () => {
   isFullscreen.value = !isFullscreen.value
   if (!isFullscreen.value) {
     showPreview.value = false
+  } else {
+    // Render preview immediately when entering fullscreen if content exists
+    if (articleForm.value.content && showPreview.value) {
+      renderedPreview.value = marked(articleForm.value.content)
+    }
   }
 }
 
@@ -331,6 +336,13 @@ const toggleFullscreen = () => {
 watch(() => articleForm.value.content, (newContent) => {
   if (isFullscreen.value && showPreview.value) {
     renderedPreview.value = marked(newContent)
+  }
+})
+
+// Watch showPreview to render immediately when toggled on
+watch(() => showPreview.value, (show) => {
+  if (show && isFullscreen.value && articleForm.value.content) {
+    renderedPreview.value = marked(articleForm.value.content)
   }
 })
 
@@ -638,6 +650,26 @@ h2 {
   padding: 20px;
   z-index: 1000;
   overflow-y: auto;
+  background: white;
+}
+
+.fullscreen .article-form {
+  max-width: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen .content-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen .editor-content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
 }
 
 .content-editor {
@@ -664,7 +696,13 @@ h2 {
 
 .fullscreen-textarea {
   width: 100% !important;
-  min-height: calc(100vh - 400px);
+  min-height: 500px;
+  flex: 1;
+}
+
+.fullscreen .editor-content.split-view .fullscreen-textarea {
+  height: 100%;
+  min-height: auto;
 }
 
 .preview-pane {
@@ -672,8 +710,9 @@ h2 {
   border-radius: 4px;
   padding: 15px;
   overflow-y: auto;
-  max-height: calc(100vh - 400px);
   background: white;
+  flex: 1;
+  height: 100%;
 }
 
 .preview-pane :deep(h1),

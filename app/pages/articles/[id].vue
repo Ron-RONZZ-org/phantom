@@ -37,8 +37,6 @@
 
 <script setup lang="ts">
 import { marked } from 'marked'
-import Prism from 'prismjs'
-import 'prismjs/themes/prism-tomorrow.css'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 
@@ -91,10 +89,14 @@ const fetchArticle = async () => {
     // Render markdown with KaTeX
     renderedContent.value = renderMarkdownWithExtensions(article.value.content)
     
-    // Apply Prism syntax highlighting after content is rendered
-    nextTick(() => {
-      Prism.highlightAll()
-    })
+    // Apply Prism syntax highlighting after content is rendered (client-side only)
+    if (process.client) {
+      nextTick(async () => {
+        const Prism = await import('prismjs')
+        await import('prismjs/themes/prism-tomorrow.css')
+        Prism.default.highlightAll()
+      })
+    }
   } catch (error) {
     console.error('Error fetching article:', error)
     article.value = null

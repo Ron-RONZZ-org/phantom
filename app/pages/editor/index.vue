@@ -3,6 +3,7 @@
     <nav class="top-nav">
       <NuxtLink to="/" class="nav-link">Home</NuxtLink>
       <NuxtLink to="/articles" class="nav-link">Articles</NuxtLink>
+      <NuxtLink v-if="isAuthenticated" to="/settings" class="nav-link">Settings</NuxtLink>
       <span v-if="isAuthenticated" class="nav-link" @click="handleLogout">Logout</span>
     </nav>
 
@@ -114,29 +115,6 @@
         <p v-if="message" class="success-message">{{ message }}</p>
         <p v-if="error" class="error-message">{{ error }}</p>
       </form>
-
-      <div class="totp-section">
-        <h2>Two-Factor Authentication</h2>
-        <button v-if="!showTotpSetup" @click="setupTotp" class="btn btn-secondary">
-          Setup TOTP
-        </button>
-        <div v-if="showTotpSetup" class="totp-setup">
-          <p>Scan this QR code with your authenticator app:</p>
-          <img v-if="totpQrCode" :src="totpQrCode" alt="TOTP QR Code" />
-          <p>Or enter this secret manually: {{ totpSecret }}</p>
-          <div class="form-group">
-            <label for="totpVerify">Enter verification code:</label>
-            <input 
-              id="totpVerify"
-              v-model="totpVerifyToken" 
-              type="text" 
-              placeholder="6-digit code"
-              class="form-input"
-            />
-          </div>
-          <button @click="enableTotp" class="btn btn-primary">Enable TOTP</button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -163,11 +141,6 @@ const articleForm = ref({
 })
 
 const tagsInput = ref('')
-
-const showTotpSetup = ref(false)
-const totpQrCode = ref('')
-const totpSecret = ref('')
-const totpVerifyToken = ref('')
 
 const checkAuth = async () => {
   try {
@@ -258,35 +231,6 @@ const resetForm = () => {
   editMode.value = false
   message.value = ''
   error.value = ''
-}
-
-const setupTotp = async () => {
-  try {
-    const response = await $fetch('/api/auth/totp/setup', {
-      method: 'POST'
-    })
-    totpQrCode.value = response.qrCode
-    totpSecret.value = response.secret
-    showTotpSetup.value = true
-  } catch (err: any) {
-    error.value = err.data?.statusMessage || 'Failed to setup TOTP'
-  }
-}
-
-const enableTotp = async () => {
-  try {
-    await $fetch('/api/auth/totp/enable', {
-      method: 'POST',
-      body: {
-        token: totpVerifyToken.value
-      }
-    })
-    message.value = 'TOTP enabled successfully!'
-    showTotpSetup.value = false
-    totpVerifyToken.value = ''
-  } catch (err: any) {
-    error.value = err.data?.statusMessage || 'Failed to enable TOTP'
-  }
 }
 
 onMounted(() => {
@@ -433,22 +377,5 @@ h2 {
 .success-message {
   color: #28a745;
   margin-top: 15px;
-}
-
-.totp-section {
-  margin-top: 40px;
-  padding-top: 40px;
-  border-top: 1px solid #e0e0e0;
-}
-
-.totp-setup {
-  margin-top: 20px;
-}
-
-.totp-setup img {
-  margin: 20px 0;
-  border: 1px solid #ddd;
-  padding: 10px;
-  border-radius: 4px;
 }
 </style>

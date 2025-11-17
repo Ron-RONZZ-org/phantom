@@ -43,7 +43,7 @@
       <div class="articles-list" v-if="articles.length > 0">
         <article v-for="article in articles" :key="article.id" class="article-item">
           <h2>
-            <NuxtLink :to="`/articles/${article.customUrl || article.id}`">
+            <NuxtLink :to="getArticleUrl(article)">
               {{ article.title }}
             </NuxtLink>
           </h2>
@@ -154,6 +154,15 @@ const formatDate = (date: string) => {
 
 const getPreview = (content: string) => {
   return content.length > 200 ? content.substring(0, 200) + '...' : content
+}
+
+const getArticleUrl = (article: any) => {
+  const articleSlug = article.customUrl || article.id
+  if (article.series) {
+    const seriesSlug = article.series.customUrl || article.series.name.toLowerCase().replace(/\s+/g, '-')
+    return `/articles/${seriesSlug}/${articleSlug}`
+  }
+  return `/articles/${articleSlug}`
 }
 
 onMounted(() => {

@@ -59,19 +59,19 @@ const renderMarkdownWithExtensions = (content: string) => {
   let html = marked(content)
   
   // Process KaTeX math expressions
-  // Inline math: $...$
-  html = html.replace(/\$([^\$]+)\$/g, (match, tex) => {
+  // Display math: $$...$$ (must be processed BEFORE inline math)
+  html = html.replace(/\$\$([^$]+?)\$\$/gs, (match, tex) => {
     try {
-      return katex.renderToString(tex, { throwOnError: false })
+      return katex.renderToString(tex.trim(), { throwOnError: false, displayMode: true })
     } catch (e) {
       return match
     }
   })
   
-  // Display math: $$...$$
-  html = html.replace(/\$\$([^\$]+)\$\$/g, (match, tex) => {
+  // Inline math: $...$
+  html = html.replace(/\$([^$\n]+?)\$/g, (match, tex) => {
     try {
-      return katex.renderToString(tex, { throwOnError: false, displayMode: true })
+      return katex.renderToString(tex, { throwOnError: false })
     } catch (e) {
       return match
     }
@@ -92,9 +92,21 @@ const fetchArticle = async () => {
     // Apply Prism syntax highlighting after content is rendered (client-side only)
     if (process.client) {
       nextTick(async () => {
-        const Prism = await import('prismjs')
-        await import('prismjs/themes/prism-tomorrow.css')
-        Prism.default.highlightAll()
+        try {
+          const Prism = await import('prismjs')
+          // Import common language support
+          await import('prismjs/components/prism-javascript')
+          await import('prismjs/components/prism-typescript')
+          await import('prismjs/components/prism-python')
+          await import('prismjs/components/prism-bash')
+          await import('prismjs/components/prism-json')
+          await import('prismjs/components/prism-markdown')
+          await import('prismjs/components/prism-css')
+          await import('prismjs/themes/prism-tomorrow.css')
+          Prism.default.highlightAll()
+        } catch (error) {
+          console.error('Error loading Prism:', error)
+        }
       })
     }
   } catch (error) {

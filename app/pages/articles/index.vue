@@ -5,7 +5,7 @@
       <nav>
         <NuxtLink to="/" class="nav-link">Home</NuxtLink>
         <NuxtLink to="/articles" class="nav-link">Articles</NuxtLink>
-        <NuxtLink to="/editor" class="nav-link">Editor</NuxtLink>
+        <NuxtLink v-if="isAuthenticated" to="/editor" class="nav-link">Editor</NuxtLink>
       </nav>
     </header>
 
@@ -18,13 +18,26 @@
           class="search-input"
           @input="handleSearch"
         />
-        <input 
-          v-model="tagFilter" 
-          type="text" 
-          placeholder="Filter by tag..." 
-          class="search-input"
-          @input="handleSearch"
-        />
+        <div class="tag-filter-container">
+          <input 
+            v-model="tagFilter" 
+            type="text" 
+            placeholder="Filter by tag..." 
+            class="search-input"
+            @input="handleSearch"
+            @focus="filterTags()"
+          />
+          <div v-if="showTagSuggestions" class="tag-suggestions">
+            <div 
+              v-for="tag in filteredTags" 
+              :key="tag" 
+              class="tag-suggestion"
+              @click="selectSuggestedTag(tag)"
+            >
+              {{ tag }}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="articles-list" v-if="articles.length > 0">
@@ -60,6 +73,39 @@
 const searchQuery = ref('')
 const tagFilter = ref('')
 const articles = ref<any[]>([])
+const isAuthenticated = ref(false)
+const allTags = ref<string[]>([])
+const filteredTags = ref<string[]>([])
+const showTagSuggestions = ref(false)
+
+const checkAuth = async () => {
+  try {
+    await $fetch('/api/auth/me')
+    isAuthenticated.value = true
+  } catch {
+    isAuthenticated.value = false
+  }
+}
+
+const fetchTags = async () => {
+  try {
+    const response = await $fetch('/api/tags')
+    allTags.value = response.tags.map((tag: any) => tag.name)
+  } catch (error) {
+    console.error('Error fetching tags:', error)
+  }
+}
+
+const filterTags = () => {
+  if (tagFilter.value.trim()) {
+    filteredTags.value = allTags.value.filter(tag => 
+      tag.toLowerCase().includes(tagFilter.value.toLowerCase())
+    )
+    showTagSuggestions.value = filteredTags.value.length > 0
+  } else {
+    showTagSuggestions.value = false
+  }
+}
 
 const fetchArticles = async () => {
   try {
@@ -77,6 +123,7 @@ const fetchArticles = async () => {
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 const handleSearch = () => {
+  filterTags()
   if (searchTimeout) {
     clearTimeout(searchTimeout)
   }
@@ -87,6 +134,13 @@ const handleSearch = () => {
 
 const filterByTag = (tagName: string) => {
   tagFilter.value = tagName
+  showTagSuggestions.value = false
+  fetchArticles()
+}
+
+const selectSuggestedTag = (tag: string) => {
+  tagFilter.value = tag
+  showTagSuggestions.value = false
   fetchArticles()
 }
 
@@ -103,6 +157,8 @@ const getPreview = (content: string) => {
 }
 
 onMounted(() => {
+  checkAuth()
+  fetchTags()
   fetchArticles()
 })
 </script>
@@ -148,6 +204,35 @@ nav {
   margin-bottom: 30px;
   display: flex;
   gap: 15px;
+}
+
+.tag-filter-container {
+  flex: 1;
+  position: relative;
+}
+
+.tag-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #007bff;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.tag-suggestion {
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.tag-suggestion:hover {
+  background-color: #f0f0f0;
 }
 
 .search-input {

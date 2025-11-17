@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readRequestBody(event)
-  const { title, content, tags, customUrl, published } = body
+  const { title, content, tags, customUrl, published, seriesId } = body
 
   if (!title || !content) {
     throw createError({
@@ -55,6 +55,7 @@ export default defineEventHandler(async (event) => {
       customUrl: customUrl || undefined,
       published: published || false,
       authorId: user.id,
+      seriesId: seriesId || undefined,
       tags: {
         connect: tagObjects
       }
@@ -66,7 +67,8 @@ export default defineEventHandler(async (event) => {
           username: true
         }
       },
-      tags: true
+      tags: true,
+      series: true
     }
   })
 

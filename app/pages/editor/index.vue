@@ -45,7 +45,7 @@
       </form>
     </div>
 
-    <div v-else class="editor-section">
+    <div v-else class="editor-section" :class="{ 'fullscreen': isFullscreen }">
       <h1>{{ editMode ? 'Edit Article' : 'Create New Article' }}</h1>
       
       <form @submit.prevent="handleSubmit" class="article-form">
@@ -61,6 +61,25 @@
         </div>
 
         <div class="form-group">
+          <label for="series">Series (optional)</label>
+          <div class="series-container">
+            <select 
+              id="series"
+              v-model="articleForm.seriesId" 
+              class="form-input"
+            >
+              <option value="">No Series</option>
+              <option v-for="series in allSeries" :key="series.id" :value="series.id">
+                {{ series.name }}
+              </option>
+            </select>
+            <button type="button" @click="showSeriesModal = true" class="btn btn-secondary">
+              Create Series
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
           <label for="customUrl">Custom URL (optional)</label>
           <input 
             id="customUrl"
@@ -69,28 +88,57 @@
             placeholder="my-article-slug"
             class="form-input"
           />
+          <small v-if="articleForm.seriesId" class="url-preview">
+            URL will be: /{{ getSeriesUrl() }}/{{ articleForm.customUrl || 'article-slug' }}
+          </small>
         </div>
 
         <div class="form-group">
           <label for="tags">Tags (comma-separated)</label>
-          <input 
-            id="tags"
-            v-model="tagsInput" 
-            type="text" 
-            placeholder="javascript, web, tutorial"
-            class="form-input"
-          />
+          <div class="tags-input-container">
+            <input 
+              id="tags"
+              v-model="tagsInput" 
+              type="text" 
+              placeholder="javascript, web, tutorial"
+              class="form-input"
+              @input="filterTags"
+              @focus="filterTags"
+            />
+            <div v-if="showTagSuggestions" class="tag-suggestions">
+              <div 
+                v-for="tag in filteredTags" 
+                :key="tag" 
+                class="tag-suggestion"
+                @click="addTag(tag)"
+              >
+                {{ tag }}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="content">Content (Markdown)</label>
-          <textarea 
-            id="content"
-            v-model="articleForm.content" 
-            required
-            class="form-textarea"
-            rows="20"
-          ></textarea>
+        <div class="form-group content-editor" :class="{ 'fullscreen-editor': isFullscreen }">
+          <div class="editor-header">
+            <label for="content">Content (Markdown)</label>
+            <button type="button" @click="toggleFullscreen" class="btn btn-secondary btn-sm">
+              {{ isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Mode' }}
+            </button>
+            <button v-if="isFullscreen" type="button" @click="showPreview = !showPreview" class="btn btn-secondary btn-sm">
+              {{ showPreview ? 'Hide Preview' : 'Show Preview' }}
+            </button>
+          </div>
+          <div class="editor-content" :class="{ 'split-view': isFullscreen && showPreview }">
+            <textarea 
+              id="content"
+              v-model="articleForm.content" 
+              required
+              class="form-textarea"
+              :class="{ 'fullscreen-textarea': isFullscreen }"
+              :rows="isFullscreen ? 30 : 20"
+            ></textarea>
+            <div v-if="isFullscreen && showPreview" class="preview-pane" v-html="renderedPreview"></div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -115,16 +163,79 @@
         <p v-if="message" class="success-message">{{ message }}</p>
         <p v-if="error" class="error-message">{{ error }}</p>
       </form>
+
+      <!-- Series Creation Modal -->
+      <div v-if="showSeriesModal" class="modal-overlay" @click="showSeriesModal = false">
+        <div class="modal-content" @click.stop>
+          <h2>Create New Series</h2>
+          <form @submit.prevent="createSeries">
+            <div class="form-group">
+              <label for="seriesName">Series Name</label>
+              <input 
+                id="seriesName"
+                v-model="newSeries.name" 
+                type="text" 
+                required
+                class="form-input"
+              />
+            </div>
+            <div class="form-group">
+              <label for="seriesDescription">Description (optional)</label>
+              <textarea 
+                id="seriesDescription"
+                v-model="newSeries.description" 
+                class="form-textarea"
+                rows="3"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="seriesUrl">Custom URL (optional)</label>
+              <input 
+                id="seriesUrl"
+                v-model="newSeries.customUrl" 
+                type="text" 
+                placeholder="my-series"
+                class="form-input"
+              />
+            </div>
+            <div class="modal-actions">
+              <button type="submit" class="btn btn-primary">Create</button>
+              <button type="button" @click="showSeriesModal = false" class="btn btn-secondary">Cancel</button>
+            </div>
+            <p v-if="seriesError" class="error-message">{{ seriesError }}</p>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { marked } from 'marked'
+
 const isAuthenticated = ref(false)
 const requiresTotp = ref(false)
 const error = ref('')
 const message = ref('')
 const editMode = ref(false)
+const isFullscreen = ref(false)
+const showPreview = ref(false)
+const renderedPreview = ref('')
+
+// Series management
+const allSeries = ref<any[]>([])
+const showSeriesModal = ref(false)
+const newSeries = ref({
+  name: '',
+  description: '',
+  customUrl: ''
+})
+const seriesError = ref('')
+
+// Tags management
+const allTags = ref<string[]>([])
+const filteredTags = ref<string[]>([])
+const showTagSuggestions = ref(false)
 
 const loginForm = ref({
   username: '',
@@ -137,15 +248,98 @@ const articleForm = ref({
   title: '',
   content: '',
   customUrl: '',
-  published: false
+  published: false,
+  seriesId: ''
 })
 
 const tagsInput = ref('')
+
+// Fetch series
+const fetchSeries = async () => {
+  try {
+    const response = await $fetch('/api/series')
+    allSeries.value = response.series
+  } catch (err) {
+    console.error('Error fetching series:', err)
+  }
+}
+
+// Fetch tags
+const fetchTags = async () => {
+  try {
+    const response = await $fetch('/api/tags')
+    allTags.value = response.tags.map((tag: any) => tag.name)
+  } catch (err) {
+    console.error('Error fetching tags:', err)
+  }
+}
+
+// Create series
+const createSeries = async () => {
+  seriesError.value = ''
+  try {
+    const response = await $fetch('/api/series/create', {
+      method: 'POST',
+      body: newSeries.value
+    })
+    allSeries.value.push(response.series)
+    articleForm.value.seriesId = response.series.id
+    showSeriesModal.value = false
+    newSeries.value = { name: '', description: '', customUrl: '' }
+  } catch (err: any) {
+    seriesError.value = err.data?.statusMessage || 'Failed to create series'
+  }
+}
+
+// Get series URL
+const getSeriesUrl = () => {
+  const series = allSeries.value.find(s => s.id === articleForm.value.seriesId)
+  return series ? (series.customUrl || series.name.toLowerCase().replace(/\s+/g, '-')) : ''
+}
+
+// Filter tags for auto-suggestion
+const filterTags = () => {
+  const lastTag = tagsInput.value.split(',').pop()?.trim() || ''
+  if (lastTag) {
+    filteredTags.value = allTags.value.filter(tag => 
+      tag.toLowerCase().includes(lastTag.toLowerCase()) &&
+      !tagsInput.value.includes(tag)
+    )
+    showTagSuggestions.value = filteredTags.value.length > 0
+  } else {
+    showTagSuggestions.value = false
+  }
+}
+
+// Add tag from suggestion
+const addTag = (tag: string) => {
+  const tags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t)
+  tags[tags.length - 1] = tag
+  tagsInput.value = tags.join(', ') + ', '
+  showTagSuggestions.value = false
+}
+
+// Toggle fullscreen
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+  if (!isFullscreen.value) {
+    showPreview.value = false
+  }
+}
+
+// Watch content for preview
+watch(() => articleForm.value.content, (newContent) => {
+  if (isFullscreen.value && showPreview.value) {
+    renderedPreview.value = marked(newContent)
+  }
+})
 
 const checkAuth = async () => {
   try {
     await $fetch('/api/auth/me')
     isAuthenticated.value = true
+    fetchSeries()
+    fetchTags()
   } catch {
     isAuthenticated.value = false
   }
@@ -225,7 +419,8 @@ const resetForm = () => {
     title: '',
     content: '',
     customUrl: '',
-    published: false
+    published: false,
+    seriesId: ''
   }
   tagsInput.value = ''
   editMode.value = false
@@ -369,6 +564,11 @@ h2 {
   background-color: #545b62;
 }
 
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
 .error-message {
   color: #dc3545;
   margin-top: 15px;
@@ -377,5 +577,157 @@ h2 {
 .success-message {
   color: #28a745;
   margin-top: 15px;
+}
+
+/* Series Management */
+.series-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.series-container select {
+  flex: 1;
+}
+
+.url-preview {
+  display: block;
+  margin-top: 5px;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* Tags Auto-suggestion */
+.tags-input-container {
+  position: relative;
+}
+
+.tag-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #007bff;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.tag-suggestion {
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.tag-suggestion:hover {
+  background-color: #f0f0f0;
+}
+
+/* Fullscreen Editor */
+.editor-section.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: none;
+  margin: 0;
+  padding: 20px;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.content-editor {
+  position: relative;
+}
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.editor-header label {
+  flex: 1;
+  margin: 0;
+}
+
+.editor-content.split-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.fullscreen-textarea {
+  width: 100% !important;
+  min-height: calc(100vh - 400px);
+}
+
+.preview-pane {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  overflow-y: auto;
+  max-height: calc(100vh - 400px);
+  background: white;
+}
+
+.preview-pane :deep(h1),
+.preview-pane :deep(h2),
+.preview-pane :deep(h3) {
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.preview-pane :deep(p) {
+  margin-bottom: 15px;
+}
+
+.preview-pane :deep(code) {
+  background-color: #f4f4f4;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+}
+
+.preview-pane :deep(pre) {
+  background-color: #f4f4f4;
+  padding: 15px;
+  border-radius: 5px;
+  overflow-x: auto;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
 }
 </style>

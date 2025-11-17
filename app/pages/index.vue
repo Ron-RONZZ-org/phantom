@@ -1,12 +1,12 @@
 <template>
   <div class="home-page">
     <header class="header">
-      <h1>Phantom Blog</h1>
-      <p class="subtitle">A minimalist blogging platform for markdown lovers</p>
+      <h1>{{ siteTitle }}</h1>
+      <p class="subtitle">{{ siteDescription }}</p>
       <nav>
         <NuxtLink to="/" class="nav-link">Home</NuxtLink>
         <NuxtLink to="/articles" class="nav-link">Articles</NuxtLink>
-        <NuxtLink to="/editor" class="nav-link">Editor</NuxtLink>
+        <NuxtLink v-if="isAuthenticated" to="/editor" class="nav-link">Editor</NuxtLink>
       </nav>
     </header>
 
@@ -53,6 +53,33 @@
 <script setup lang="ts">
 const searchQuery = ref('')
 const articles = ref<any[]>([])
+const isAuthenticated = ref(false)
+const siteTitle = ref('Phantom Blog')
+const siteDescription = ref('A minimalist blogging platform for markdown lovers')
+
+const checkAuth = async () => {
+  try {
+    await $fetch('/api/auth/me')
+    isAuthenticated.value = true
+  } catch {
+    isAuthenticated.value = false
+  }
+}
+
+const fetchSiteSettings = async () => {
+  try {
+    const response = await $fetch('/api/settings/site')
+    siteTitle.value = response.settings.siteTitle
+    siteDescription.value = response.settings.siteDescription
+    
+    // Update page title
+    if (typeof document !== 'undefined') {
+      document.title = response.settings.siteTitle
+    }
+  } catch (error) {
+    // Use defaults if no settings found
+  }
+}
 
 const fetchArticles = async () => {
   try {
@@ -90,6 +117,8 @@ const getPreview = (content: string) => {
 }
 
 onMounted(() => {
+  checkAuth()
+  fetchSiteSettings()
   fetchArticles()
 })
 </script>

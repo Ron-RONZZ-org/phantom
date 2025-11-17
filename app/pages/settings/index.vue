@@ -16,6 +16,77 @@
     <div v-else class="settings-section">
       <h1>Settings</h1>
 
+      <!-- Site Configuration Section -->
+      <section class="settings-card">
+        <h2>Site Configuration</h2>
+        <form @submit.prevent="handleSiteSettingsUpdate" class="settings-form">
+          <div class="form-group">
+            <label for="siteTitle">Site Title</label>
+            <input 
+              id="siteTitle"
+              v-model="siteSettingsForm.siteTitle" 
+              type="text" 
+              required
+              class="form-input"
+            />
+          </div>
+          <div class="form-group">
+            <label for="siteDescription">Site Description</label>
+            <textarea 
+              id="siteDescription"
+              v-model="siteSettingsForm.siteDescription" 
+              class="form-textarea"
+              rows="3"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label for="logoUrl">Logo URL (optional)</label>
+            <input 
+              id="logoUrl"
+              v-model="siteSettingsForm.logoUrl" 
+              type="text" 
+              placeholder="https://example.com/logo.png"
+              class="form-input"
+            />
+          </div>
+          <div class="form-group">
+            <label for="faviconUrl">Favicon URL (optional)</label>
+            <input 
+              id="faviconUrl"
+              v-model="siteSettingsForm.faviconUrl" 
+              type="text" 
+              placeholder="https://example.com/favicon.ico"
+              class="form-input"
+            />
+          </div>
+          <div class="form-group">
+            <label for="headerHtml">Header HTML Injection (optional)</label>
+            <textarea 
+              id="headerHtml"
+              v-model="siteSettingsForm.headerHtml" 
+              class="form-textarea"
+              rows="5"
+              placeholder="<script>...</script> or <link>..."
+            ></textarea>
+            <small>HTML to inject into the page header (e.g., analytics, custom scripts)</small>
+          </div>
+          <div class="form-group">
+            <label for="footerHtml">Footer HTML Injection (optional)</label>
+            <textarea 
+              id="footerHtml"
+              v-model="siteSettingsForm.footerHtml" 
+              class="form-textarea"
+              rows="5"
+              placeholder="<script>...</script> or custom HTML"
+            ></textarea>
+            <small>HTML to inject before closing body tag (e.g., chat widgets, custom scripts)</small>
+          </div>
+          <button type="submit" class="btn btn-primary">Save Site Settings</button>
+          <p v-if="siteSettingsMessage" class="success-message">{{ siteSettingsMessage }}</p>
+          <p v-if="siteSettingsError" class="error-message">{{ siteSettingsError }}</p>
+        </form>
+      </section>
+
       <!-- Password Change Section -->
       <section class="settings-card">
         <h2>Change Password</h2>
@@ -136,6 +207,18 @@
 const isAuthenticated = ref(false)
 const user = ref<any>(null)
 
+// Site settings form
+const siteSettingsForm = ref({
+  siteTitle: 'Phantom Blog',
+  siteDescription: 'A minimalist blogging platform for markdown lovers',
+  logoUrl: '',
+  faviconUrl: '',
+  headerHtml: '',
+  footerHtml: ''
+})
+const siteSettingsMessage = ref('')
+const siteSettingsError = ref('')
+
 // Password form
 const passwordForm = ref({
   currentPassword: '',
@@ -159,11 +242,44 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const themeMessage = ref('')
 const themeError = ref('')
 
+const fetchSiteSettings = async () => {
+  try {
+    const response = await $fetch('/api/settings/site')
+    const settings = response.settings
+    siteSettingsForm.value = {
+      siteTitle: settings.siteTitle,
+      siteDescription: settings.siteDescription,
+      logoUrl: settings.logoUrl || '',
+      faviconUrl: settings.faviconUrl || '',
+      headerHtml: settings.headerHtml || '',
+      footerHtml: settings.footerHtml || ''
+    }
+  } catch (err) {
+    console.error('Error fetching site settings:', err)
+  }
+}
+
+const handleSiteSettingsUpdate = async () => {
+  siteSettingsMessage.value = ''
+  siteSettingsError.value = ''
+
+  try {
+    await $fetch('/api/settings/site', {
+      method: 'POST',
+      body: siteSettingsForm.value
+    })
+    siteSettingsMessage.value = 'Site settings updated successfully!'
+  } catch (err: any) {
+    siteSettingsError.value = err.data?.statusMessage || 'Failed to update site settings'
+  }
+}
+
 const checkAuth = async () => {
   try {
     const response = await $fetch('/api/auth/me')
     isAuthenticated.value = true
     user.value = response.user
+    fetchSiteSettings()
   } catch {
     isAuthenticated.value = false
     navigateTo('/editor')

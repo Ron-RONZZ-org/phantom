@@ -3,7 +3,7 @@
     <nav class="top-nav">
       <NuxtLink to="/" class="nav-link">Home</NuxtLink>
       <NuxtLink to="/articles" class="nav-link">Articles</NuxtLink>
-      <NuxtLink to="/editor" class="nav-link">Editor</NuxtLink>
+      <NuxtLink v-if="isAuthenticated" to="/editor" class="nav-link">Editor</NuxtLink>
     </nav>
 
     <div v-if="loading" class="loading">Loading...</div>
@@ -37,11 +37,50 @@
 
 <script setup lang="ts">
 import { marked } from 'marked'
+import Prism from 'prismjs'
+import 'prismjs/themes/prism-tomorrow.css'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 const route = useRoute()
 const article = ref<any>(null)
 const loading = ref(true)
 const renderedContent = ref('')
+const isAuthenticated = ref(false)
+
+const checkAuth = async () => {
+  try {
+    await $fetch('/api/auth/me')
+    isAuthenticated.value = true
+  } catch {
+    isAuthenticated.value = false
+  }
+}
+
+const renderMarkdownWithExtensions = (content: string) => {
+  let html = marked(content)
+  
+  // Process KaTeX math expressions
+  // Inline math: $...$
+  html = html.replace(/\$([^\$]+)\$/g, (match, tex) => {
+    try {
+      return katex.renderToString(tex, { throwOnError: false })
+    } catch (e) {
+      return match
+    }
+  })
+  
+  // Display math: $$...$$
+  html = html.replace(/\$\$([^\$]+)\$\$/g, (match, tex) => {
+    try {
+      return katex.renderToString(tex, { throwOnError: false, displayMode: true })
+    } catch (e) {
+      return match
+    }
+  })
+  
+  return html
+}
 
 const fetchArticle = async () => {
   try {
@@ -49,8 +88,13 @@ const fetchArticle = async () => {
     const response = await $fetch(`/api/articles/${route.params.id}`)
     article.value = response.article
     
-    // Render markdown
-    renderedContent.value = marked(article.value.content)
+    // Render markdown with KaTeX
+    renderedContent.value = renderMarkdownWithExtensions(article.value.content)
+    
+    // Apply Prism syntax highlighting after content is rendered
+    nextTick(() => {
+      Prism.highlightAll()
+    })
   } catch (error) {
     console.error('Error fetching article:', error)
     article.value = null
@@ -68,6 +112,7 @@ const formatDate = (date: string) => {
 }
 
 onMounted(() => {
+  checkAuth()
   fetchArticle()
 })
 </script>

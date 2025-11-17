@@ -23,4 +23,7 @@ logs
 .env.*
 !.env.example
 
+# Custom user theme
+public/custom-theme.css
+
 /app/generated/prisma

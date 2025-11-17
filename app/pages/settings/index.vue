@@ -560,6 +560,29 @@ h2 {
   border-color: #007bff;
 }
 
+.form-textarea {
+  width: 100%;
+  padding: 10px 15px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: vertical;
+  font-family: 'Courier New', monospace;
+}
+
+.form-textarea:focus {
+  border-color: #007bff;
+}
+
+small {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
 .btn {
   padding: 12px 24px;
   font-size: 1rem;

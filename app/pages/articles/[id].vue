@@ -91,22 +91,27 @@ const fetchArticle = async () => {
     
     // Apply Prism syntax highlighting after content is rendered (client-side only)
     if (process.client) {
-      nextTick(async () => {
-        try {
-          const Prism = await import('prismjs')
-          // Import common language support
-          await import('prismjs/components/prism-javascript')
-          await import('prismjs/components/prism-typescript')
-          await import('prismjs/components/prism-python')
-          await import('prismjs/components/prism-bash')
-          await import('prismjs/components/prism-json')
-          await import('prismjs/components/prism-markdown')
-          await import('prismjs/components/prism-css')
-          await import('prismjs/themes/prism-tomorrow.css')
-          Prism.default.highlightAll()
-        } catch (error) {
-          console.error('Error loading Prism:', error)
-        }
+      // Use double nextTick to ensure DOM is fully updated
+      nextTick(() => {
+        nextTick(async () => {
+          try {
+            const Prism = await import('prismjs')
+            // Import common language support
+            await import('prismjs/components/prism-javascript')
+            await import('prismjs/components/prism-typescript')
+            await import('prismjs/components/prism-python')
+            await import('prismjs/components/prism-bash')
+            await import('prismjs/components/prism-json')
+            await import('prismjs/components/prism-markdown')
+            await import('prismjs/components/prism-css')
+            await import('prismjs/themes/prism-tomorrow.css')
+            
+            // Highlight all code blocks
+            Prism.default.highlightAll()
+          } catch (error) {
+            console.error('Error loading Prism:', error)
+          }
+        })
       })
     }
   } catch (error) {

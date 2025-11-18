@@ -213,6 +213,11 @@
 <script setup lang="ts">
 import { marked } from 'marked'
 
+// Import Prism CSS for preview highlighting
+if (process.client) {
+  import('prismjs/themes/prism-tomorrow.css')
+}
+
 const isAuthenticated = ref(false)
 const requiresTotp = ref(false)
 const error = ref('')
@@ -336,13 +341,49 @@ const toggleFullscreen = () => {
 watch(() => articleForm.value.content, (newContent) => {
   if (isFullscreen.value && showPreview.value) {
     renderedPreview.value = marked(newContent)
+    // Apply syntax highlighting to preview
+    if (process.client) {
+      nextTick(async () => {
+        try {
+          const Prism = await import('prismjs')
+          await import('prismjs/components/prism-javascript')
+          await import('prismjs/components/prism-typescript')
+          await import('prismjs/components/prism-python')
+          await import('prismjs/components/prism-bash')
+          await import('prismjs/components/prism-json')
+          await import('prismjs/components/prism-markdown')
+          await import('prismjs/components/prism-css')
+          Prism.default.highlightAll()
+        } catch (error) {
+          console.error('Error loading Prism in preview:', error)
+        }
+      })
+    }
   }
 })
 
 // Watch showPreview to render immediately when toggled on
-watch(() => showPreview.value, (show) => {
+watch(() => showPreview.value, async (show) => {
   if (show && isFullscreen.value && articleForm.value.content) {
     renderedPreview.value = marked(articleForm.value.content)
+    // Apply syntax highlighting to preview
+    if (process.client) {
+      nextTick(async () => {
+        try {
+          const Prism = await import('prismjs')
+          await import('prismjs/components/prism-javascript')
+          await import('prismjs/components/prism-typescript')
+          await import('prismjs/components/prism-python')
+          await import('prismjs/components/prism-bash')
+          await import('prismjs/components/prism-json')
+          await import('prismjs/components/prism-markdown')
+          await import('prismjs/components/prism-css')
+          Prism.default.highlightAll()
+        } catch (error) {
+          console.error('Error loading Prism in preview:', error)
+        }
+      })
+    }
   }
 })
 

@@ -89,7 +89,10 @@
             class="form-input"
           />
           <small v-if="articleForm.seriesId" class="url-preview">
-            URL will be: /{{ getSeriesUrl() }}/{{ articleForm.customUrl || 'article-slug' }}
+            URL will be: /{{ getSeriesUrl() }}/{{ articleForm.customUrl || generateSlugFromTitle() }}
+          </small>
+          <small v-else-if="!articleForm.seriesId && articleForm.title" class="url-preview">
+            URL will be: /{{ articleForm.customUrl || generateSlugFromTitle() }}
           </small>
         </div>
 
@@ -300,6 +303,17 @@ const createSeries = async () => {
 const getSeriesUrl = () => {
   const series = allSeries.value.find(s => s.id === articleForm.value.seriesId)
   return series ? (series.customUrl || series.name.toLowerCase().replace(/\s+/g, '-')) : ''
+}
+
+// Generate slug from title for preview
+const generateSlugFromTitle = () => {
+  if (!articleForm.value.title) return 'article-slug'
+  return articleForm.value.title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim()
 }
 
 // Filter tags for auto-suggestion

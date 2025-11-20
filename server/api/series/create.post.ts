@@ -25,8 +25,8 @@ export default defineEventHandler(async (event) => {
     const series = await prisma.series.create({
       data: {
         name,
-        description,
-        customUrl
+        description: description || undefined,
+        customUrl: customUrl || undefined
       }
     })
 

@@ -48,6 +48,10 @@
     <div v-else class="editor-section" :class="{ 'fullscreen': isFullscreen }">
       <h1 v-if="!isFullscreen">{{ editMode ? 'Edit Article' : 'Create New Article' }}</h1>
       
+      <!-- Success/Error messages displayed prominently outside form -->
+      <div v-if="message" class="success-banner">{{ message }}</div>
+      <div v-if="error && !isFullscreen" class="error-banner">{{ error }}</div>
+      
       <form @submit.prevent="handleSubmit" class="article-form">
         <div v-if="!isFullscreen" class="form-group">
           <label for="title">Title</label>
@@ -162,9 +166,6 @@
             Cancel
           </button>
         </div>
-        
-        <p v-if="message && !isFullscreen" class="success-message">{{ message }}</p>
-        <p v-if="error && !isFullscreen" class="error-message">{{ error }}</p>
       </form>
 
       <!-- Series Creation Modal -->
@@ -286,9 +287,16 @@ const fetchTags = async () => {
 const createSeries = async () => {
   seriesError.value = ''
   try {
+    // Only send customUrl if it's not empty
+    const seriesData = {
+      name: newSeries.value.name,
+      description: newSeries.value.description,
+      customUrl: newSeries.value.customUrl.trim() || undefined
+    }
+    
     const response = await $fetch('/api/series/create', {
       method: 'POST',
-      body: newSeries.value
+      body: seriesData
     })
     allSeries.value.push(response.series)
     articleForm.value.seriesId = response.series.id
@@ -654,6 +662,30 @@ h2 {
 .error-message {
   color: #dc3545;
   margin-top: 15px;
+}
+
+.success-banner {
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  font-weight: 500;
+  font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.error-banner {
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  font-weight: 500;
+  font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .success-message {

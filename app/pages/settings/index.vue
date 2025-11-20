@@ -4,6 +4,8 @@
       <NuxtLink to="/" class="nav-link">Home</NuxtLink>
       <NuxtLink to="/articles" class="nav-link">Articles</NuxtLink>
       <NuxtLink to="/editor" class="nav-link">Editor</NuxtLink>
+      <NuxtLink v-if="isAuthenticated" to="/admin" class="nav-link">Admin</NuxtLink>
+      <NuxtLink to="/settings" class="nav-link active">Settings</NuxtLink>
       <span v-if="isAuthenticated" class="nav-link" @click="handleLogout">Logout</span>
     </nav>
 

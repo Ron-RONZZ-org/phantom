@@ -52,13 +52,24 @@ export default defineEventHandler(async (event) => {
 
   // Convert articles to markdown format with YAML frontmatter
   const markdownFiles = articles.map(article => {
+    // Escape special YAML characters in values
+    const escapeYamlValue = (value: any) => {
+      if (value === null || value === undefined) return ''
+      const str = String(value)
+      // If value contains special characters, wrap in quotes
+      if (str.includes(':') || str.includes('#') || str.includes('\n') || str.includes('"')) {
+        return `"${str.replace(/"/g, '\\"')}"`
+      }
+      return str
+    }
+    
     const frontmatter = [
       '---',
-      `title: ${article.title}`,
+      `title: ${escapeYamlValue(article.title)}`,
       `published: ${article.published}`,
-      `customUrl: ${article.customUrl || ''}`,
-      `seriesId: ${article.seriesId || ''}`,
-      `tags: [${article.tags.map(t => t.name).join(', ')}]`,
+      `customUrl: ${escapeYamlValue(article.customUrl)}`,
+      `seriesId: ${escapeYamlValue(article.seriesId)}`,
+      `tags: [${article.tags.map(t => escapeYamlValue(t.name)).join(', ')}]`,
       `createdAt: ${article.createdAt.toISOString()}`,
       `updatedAt: ${article.updatedAt.toISOString()}`,
       '---',

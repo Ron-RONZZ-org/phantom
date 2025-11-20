@@ -655,16 +655,38 @@ const uploadArticles = async () => {
       // Parse frontmatter
       const metadata: any = {}
       frontmatterLines.forEach(line => {
-        const match = line.match(/^(\w+):\s*(.+)$/)
-        if (match) {
-          const key = match[1]
-          let value = match[2].trim()
+        // More robust key-value parsing that handles quotes and special chars
+        const colonIndex = line.indexOf(':')
+        if (colonIndex > 0) {
+          const key = line.substring(0, colonIndex).trim()
+          let value = line.substring(colonIndex + 1).trim()
+          
+          // Remove quotes if present
+          if ((value.startsWith('"') && value.endsWith('"')) || 
+              (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.slice(1, -1)
+          }
           
           if (key === 'tags') {
-            // Parse tags array
-            value = value.replace(/^\[|\]$/g, '').split(',').map((t: string) => t.trim()).filter((t: string) => t)
+            // Parse tags array - handle both quoted and unquoted values
+            if (value.startsWith('[') && value.endsWith(']')) {
+              const tagStr = value.slice(1, -1)
+              value = tagStr.split(',')
+                .map((t: string) => {
+                  t = t.trim()
+                  // Remove quotes if present
+                  if ((t.startsWith('"') && t.endsWith('"')) || 
+                      (t.startsWith("'") && t.endsWith("'"))) {
+                    t = t.slice(1, -1)
+                  }
+                  return t
+                })
+                .filter((t: string) => t)
+            } else {
+              value = []
+            }
           } else if (key === 'published') {
-            value = value === 'true'
+            value = value === 'true' || value === true
           }
           
           metadata[key] = value

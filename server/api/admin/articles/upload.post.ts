@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
         data: {
           title,
           content,
-          published: published === true || published === 'true',
+          published: Boolean(published === true || published === 'true'),
           customUrl: customUrl || null,
           authorId: user.id,
           seriesId: seriesId || null,

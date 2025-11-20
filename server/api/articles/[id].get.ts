@@ -16,7 +16,8 @@ export default defineEventHandler(async (event) => {
         { id },
         { customUrl: id }
       ],
-      published: true
+      published: true,
+      deletedAt: null
     },
     include: {
       author: {
@@ -25,7 +26,8 @@ export default defineEventHandler(async (event) => {
           username: true
         }
       },
-      tags: true
+      tags: true,
+      series: true
     }
   })
 

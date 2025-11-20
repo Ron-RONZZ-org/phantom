@@ -594,7 +594,42 @@ const copyArticleLink = async () => {
 
 onMounted(() => {
   checkAuth()
+  
+  // Check if we should load an article from query parameter
+  if (process.client) {
+    const urlParams = new URLSearchParams(window.location.search)
+    const articleId = urlParams.get('id')
+    if (articleId) {
+      loadArticleForEdit(articleId)
+    }
+  }
 })
+
+const loadArticleForEdit = async (articleId: string) => {
+  try {
+    const response = await $fetch('/api/admin/article', {
+      params: { id: articleId }
+    })
+    
+    if (response.article) {
+      const article = response.article
+      articleForm.value = {
+        id: article.id,
+        title: article.title,
+        content: article.content,
+        customUrl: article.customUrl || '',
+        published: article.published,
+        seriesId: article.seriesId || ''
+      }
+      tagsInput.value = article.tags.map((t: any) => t.name).join(', ')
+      editMode.value = true
+    }
+  } catch (err) {
+    console.error('Failed to load article:', err)
+    error.value = 'Failed to load article for editing'
+  }
+}
+
 </script>
 
 <style scoped>

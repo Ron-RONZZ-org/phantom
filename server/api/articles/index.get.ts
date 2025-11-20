@@ -18,7 +18,8 @@ export default defineEventHandler(async (event) => {
   }
   
   const where: any = {
-    published: true
+    published: true,
+    deletedAt: null
   }
 
   if (search) {

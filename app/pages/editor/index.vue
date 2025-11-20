@@ -197,7 +197,7 @@
                 id="seriesUrl"
                 v-model="newSeries.customUrl" 
                 type="text" 
-                placeholder="my-series"
+                :placeholder="generateSeriesSlugPreview()"
                 class="form-input"
               />
             </div>
@@ -309,6 +309,17 @@ const getSeriesUrl = () => {
 const generateSlugFromTitle = () => {
   if (!articleForm.value.title) return 'article-slug'
   return articleForm.value.title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim()
+}
+
+// Generate slug preview for series
+const generateSeriesSlugPreview = () => {
+  if (!newSeries.value.name) return 'my-series'
+  return newSeries.value.name
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
@@ -465,14 +476,18 @@ const handleSubmit = async () => {
         method: 'PUT',
         body: data
       })
-      message.value = 'Article updated successfully!'
+      message.value = articleForm.value.published 
+        ? '✅ Article published successfully!' 
+        : '✅ Article draft saved successfully!'
     } else {
       // Create new article
       await $fetch('/api/articles/create', {
         method: 'POST',
         body: data
       })
-      message.value = 'Article created successfully!'
+      message.value = articleForm.value.published 
+        ? '✅ Article published successfully!' 
+        : '✅ Article draft saved successfully!'
       resetForm()
     }
   } catch (err: any) {
@@ -642,8 +657,13 @@ h2 {
 }
 
 .success-message {
-  color: #28a745;
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  padding: 12px 20px;
   margin-top: 15px;
+  font-weight: 500;
 }
 
 /* Series Management */

@@ -48,8 +48,7 @@
     <div v-else class="editor-section" :class="{ 'fullscreen': isFullscreen }">
       <h1 v-if="!isFullscreen">{{ editMode ? 'Edit Article' : 'Create New Article' }}</h1>
       
-      <!-- Success/Error messages displayed prominently outside form -->
-      <div v-if="message" class="success-banner">{{ message }}</div>
+      <!-- Error messages displayed -->
       <div v-if="error && !isFullscreen" class="error-banner">{{ error }}</div>
       
       <form @submit.prevent="handleSubmit" class="article-form">
@@ -210,6 +209,36 @@
           </form>
         </div>
       </div>
+
+      <!-- Success Modal -->
+      <div v-if="showSuccessModal" class="modal-overlay" @click="showSuccessModal = false">
+        <div class="modal-content success-modal" @click.stop>
+          <div class="success-icon">✅</div>
+          <h2>{{ successModalData.published ? 'Article Published!' : 'Draft Saved!' }}</h2>
+          <p>{{ successModalData.published ? 'Your article has been published successfully.' : 'Your draft has been saved successfully.' }}</p>
+          
+          <div class="article-link-section">
+            <label>Article Link:</label>
+            <div class="link-display">
+              <input 
+                :value="successModalData.articleUrl" 
+                readonly 
+                class="link-input"
+                ref="linkInput"
+              />
+            </div>
+          </div>
+          
+          <div class="modal-actions">
+            <button @click="copyArticleLink" class="btn btn-primary">
+              🔗 Copy Direct Link
+            </button>
+            <button @click="showSuccessModal = false" class="btn btn-secondary">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -230,6 +259,13 @@ const editMode = ref(false)
 const isFullscreen = ref(false)
 const showPreview = ref(false)
 const renderedPreview = ref('')
+
+// Success modal for article creation
+const showSuccessModal = ref(false)
+const successModalData = ref({
+  published: false,
+  articleUrl: ''
+})
 
 // Series management
 const allSeries = ref<any[]>([])
@@ -478,24 +514,47 @@ const handleSubmit = async () => {
       tags
     }
 
+    let createdArticle: any = null
+
     if (editMode.value) {
       // Update existing article
-      await $fetch(`/api/articles/${articleForm.value.id}`, {
+      const response = await $fetch(`/api/articles/${articleForm.value.id}`, {
         method: 'PUT',
         body: data
       })
-      message.value = articleForm.value.published 
-        ? '✅ Article published successfully!' 
-        : '✅ Article draft saved successfully!'
+      createdArticle = response.article
     } else {
       // Create new article
-      await $fetch('/api/articles/create', {
+      const response = await $fetch('/api/articles/create', {
         method: 'POST',
         body: data
       })
-      message.value = articleForm.value.published 
-        ? '✅ Article published successfully!' 
-        : '✅ Article draft saved successfully!'
+      createdArticle = response.article
+    }
+
+    // Generate article URL
+    const articleSlug = createdArticle.customUrl || createdArticle.id
+    let articlePath = ''
+    
+    if (createdArticle.series) {
+      const seriesSlug = createdArticle.series.customUrl || createdArticle.series.name.toLowerCase().replace(/\s+/g, '-')
+      articlePath = `/articles/${seriesSlug}/${articleSlug}`
+    } else {
+      articlePath = `/articles/${articleSlug}`
+    }
+
+    // Get full URL
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    const fullUrl = `${baseUrl}${articlePath}`
+
+    // Show success modal
+    successModalData.value = {
+      published: articleForm.value.published,
+      articleUrl: fullUrl
+    }
+    showSuccessModal.value = true
+
+    if (!editMode.value) {
       resetForm()
     }
   } catch (err: any) {
@@ -516,6 +575,21 @@ const resetForm = () => {
   editMode.value = false
   message.value = ''
   error.value = ''
+}
+
+// Copy article link to clipboard
+const linkInput = ref<HTMLInputElement | null>(null)
+const copyArticleLink = async () => {
+  try {
+    if (linkInput.value) {
+      linkInput.value.select()
+      await navigator.clipboard.writeText(successModalData.value.articleUrl)
+      // Could show a brief "Copied!" message, but keeping it simple
+      alert('Link copied to clipboard!')
+    }
+  } catch (err) {
+    console.error('Failed to copy link:', err)
+  }
 }
 
 onMounted(() => {
@@ -827,6 +901,60 @@ h2 {
 .preview-pane :deep(h3) {
   margin-top: 20px;
   margin-bottom: 10px;
+}
+
+/* Success Modal */
+.success-modal {
+  min-width: 500px;
+  text-align: center;
+}
+
+.success-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.success-modal h2 {
+  color: #155724;
+  margin-bottom: 10px;
+}
+
+.success-modal p {
+  color: #666;
+  margin-bottom: 25px;
+}
+
+.article-link-section {
+  margin-bottom: 25px;
+  text-align: left;
+}
+
+.article-link-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.link-display {
+  display: flex;
+  gap: 10px;
+}
+
+.link-input {
+  flex: 1;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  background-color: #f8f9fa;
+  color: #495057;
+}
+
+.link-input:focus {
+  outline: none;
+  border-color: #007bff;
+  background-color: #fff;
 }
 
 .preview-pane :deep(p) {

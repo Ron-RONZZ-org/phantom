@@ -32,6 +32,8 @@ model Article {
   published   Boolean          @default(false)
   authorId    String
   author      User             @relation(fields: [authorId], references: [id])
+  seriesId    String?
+  series      Series?          @relation(fields: [seriesId], references: [id])
   tags        Tag[]
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
@@ -39,6 +41,7 @@ model Article {
 
   @@index([authorId])
   @@index([customUrl])
+  @@index([seriesId])
 }
 
 model Tag {
@@ -57,4 +60,28 @@ model ArticleHistory {
   editedAt  DateTime @default(now())
 
   @@index([articleId])
+}
+
+model Series {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  customUrl   String?   @unique
+  articles    Article[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([customUrl])
+}
+
+model SiteSettings {
+  id              String   @id @default(uuid())
+  siteTitle       String   @default("Phantom Blog")
+  siteDescription String   @default("A minimalist blogging platform for markdown lovers")
+  logoUrl         String?
+  faviconUrl      String?
+  headerHtml      String?
+  footerHtml      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

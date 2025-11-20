@@ -1,12 +1,13 @@
 <template>
   <div class="home-page">
     <header class="header">
-      <h1>Phantom Blog</h1>
-      <p class="subtitle">A minimalist blogging platform for markdown lovers</p>
+      <img v-if="logoUrl" :src="logoUrl" alt="Site Logo" class="site-logo" />
+      <h1>{{ siteTitle }}</h1>
+      <p class="subtitle">{{ siteDescription }}</p>
       <nav>
         <NuxtLink to="/" class="nav-link">Home</NuxtLink>
         <NuxtLink to="/articles" class="nav-link">Articles</NuxtLink>
-        <NuxtLink to="/editor" class="nav-link">Editor</NuxtLink>
+        <NuxtLink v-if="isAuthenticated" to="/editor" class="nav-link">Editor</NuxtLink>
       </nav>
     </header>
 
@@ -24,7 +25,7 @@
       <div class="articles-grid" v-if="articles.length > 0">
         <article v-for="article in articles" :key="article.id" class="article-card">
           <h2>
-            <NuxtLink :to="`/articles/${article.customUrl || article.id}`">
+            <NuxtLink :to="getArticleUrl(article)">
               {{ article.title }}
             </NuxtLink>
           </h2>
@@ -53,6 +54,35 @@
 <script setup lang="ts">
 const searchQuery = ref('')
 const articles = ref<any[]>([])
+const isAuthenticated = ref(false)
+const siteTitle = ref('Phantom Blog')
+const siteDescription = ref('A minimalist blogging platform for markdown lovers')
+const logoUrl = ref('')
+
+const checkAuth = async () => {
+  try {
+    await $fetch('/api/auth/me')
+    isAuthenticated.value = true
+  } catch {
+    isAuthenticated.value = false
+  }
+}
+
+const fetchSiteSettings = async () => {
+  try {
+    const response = await $fetch('/api/settings/site')
+    siteTitle.value = response.settings.siteTitle
+    siteDescription.value = response.settings.siteDescription
+    logoUrl.value = response.settings.logoUrl || ''
+    
+    // Update page title
+    if (typeof document !== 'undefined') {
+      document.title = response.settings.siteTitle
+    }
+  } catch (error) {
+    // Use defaults if no settings found
+  }
+}
 
 const fetchArticles = async () => {
   try {
@@ -89,7 +119,18 @@ const getPreview = (content: string) => {
   return content.length > 200 ? content.substring(0, 200) + '...' : content
 }
 
+const getArticleUrl = (article: any) => {
+  const articleSlug = article.customUrl || article.id
+  if (article.series) {
+    const seriesSlug = article.series.customUrl || article.series.name.toLowerCase().replace(/\s+/g, '-')
+    return `/articles/${seriesSlug}/${articleSlug}`
+  }
+  return `/articles/${articleSlug}`
+}
+
 onMounted(() => {
+  checkAuth()
+  fetchSiteSettings()
   fetchArticles()
 })
 </script>
@@ -104,6 +145,13 @@ onMounted(() => {
 .header {
   text-align: center;
   margin-bottom: 40px;
+}
+
+.site-logo {
+  max-width: 200px;
+  max-height: 100px;
+  margin-bottom: 20px;
+  object-fit: contain;
 }
 
 .header h1 {

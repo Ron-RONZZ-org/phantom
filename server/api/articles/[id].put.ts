@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readRequestBody(event)
-  const { title, content, tags, customUrl, published } = body
+  const { title, content, tags, customUrl, published, seriesId } = body
 
   // Check ownership
   const article = await prisma.article.findUnique({
@@ -76,6 +76,7 @@ export default defineEventHandler(async (event) => {
       content: content !== undefined ? content : undefined,
       customUrl: customUrl !== undefined ? (customUrl || null) : undefined,
       published: published !== undefined ? published : undefined,
+      seriesId: seriesId !== undefined ? (seriesId || null) : undefined,
       tags: tags !== undefined ? {
         set: [],
         connect: tagObjects
@@ -88,7 +89,8 @@ export default defineEventHandler(async (event) => {
           username: true
         }
       },
-      tags: true
+      tags: true,
+      series: true
     }
   })
 

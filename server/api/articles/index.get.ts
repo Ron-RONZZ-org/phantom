@@ -45,7 +45,8 @@ export default defineEventHandler(async (event) => {
           username: true
         }
       },
-      tags: true
+      tags: true,
+      series: true
     },
     orderBy: {
       createdAt: 'desc'

@@ -83,6 +83,7 @@ const renderMarkdownWithExtensions = (content: string) => {
 const fetchArticle = async () => {
   try {
     loading.value = true
+    // Try to fetch using the article slug (route.params.id here refers to article slug)
     const response = await $fetch(`/api/articles/${route.params.id}`)
     article.value = response.article
     

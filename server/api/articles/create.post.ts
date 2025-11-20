@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readRequestBody(event)
-  const { title, content, tags, customUrl, published } = body
+  const { title, content, tags, customUrl, published, seriesId } = body
 
   if (!title || !content) {
     throw createError({
@@ -47,14 +47,22 @@ export default defineEventHandler(async (event) => {
     })
   ) : []
 
+  // Auto-generate customUrl from title if not provided
+  const finalCustomUrl = customUrl || title.toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-')          // Replace spaces with hyphens
+    .replace(/-+/g, '-')           // Replace multiple hyphens with single
+    .trim()
+
   // Create article
   const article = await prisma.article.create({
     data: {
       title,
       content,
-      customUrl: customUrl || undefined,
+      customUrl: finalCustomUrl,
       published: published || false,
       authorId: user.id,
+      seriesId: seriesId || undefined,
       tags: {
         connect: tagObjects
       }
@@ -66,7 +74,8 @@ export default defineEventHandler(async (event) => {
           username: true
         }
       },
-      tags: true
+      tags: true,
+      series: true
     }
   })
 

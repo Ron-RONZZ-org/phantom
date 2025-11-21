@@ -37,11 +37,13 @@ model Article {
   tags        Tag[]
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
   history     ArticleHistory[]
 
   @@index([authorId])
   @@index([customUrl])
   @@index([seriesId])
+  @@index([deletedAt])
 }
 
 model Tag {

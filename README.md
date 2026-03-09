@@ -49,12 +49,12 @@ SESSION_SECRET="your-session-secret-key"
 npx prisma migrate dev --name init
 ```
 
-5. Create a user (run in Node.js REPL or create a seed script):
-```bash
-npx prisma studio
-```
+5. Create a user 
 
-Or create a user directly using the Prisma client in a script.
+Seed the database with a default admin user and sample content:
+```bash
+npm run db:seed
+```
 
 ### Development
 
